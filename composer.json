@@ -4,11 +4,6 @@
     "require": {
         "laravel/framework": "^12.25"
     },
-    "autoload": {
-        "psr-4": {
-            "Navisot\\LaravelKafkaQueue\\": "src/"
-        }
-    },
     "authors": [
         {
             "name": "Nick Avr",
