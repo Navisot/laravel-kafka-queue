@@ -2,7 +2,8 @@
     "name": "navisot/laravel-kafka-queue",
     "description": "A mini package to use Kafka as a laravel driver.",
     "require": {
-        "laravel/framework": "^12.25"
+        "laravel/framework": "^12.25",
+        "ext-rdkafka": "*"
     },
     "authors": [
         {

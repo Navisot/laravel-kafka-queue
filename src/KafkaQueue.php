@@ -5,6 +5,9 @@ namespace Kafka;
 use Illuminate\Queue\Queue;
 use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Exception;
+use RdKafka\Producer;
+use RdKafka\KafkaConsumer;
+use InvalidArgumentException;
 
 /**
  * @method int pendingSize(string|null $queue = null)
@@ -14,7 +17,15 @@ use Exception;
  */
 class KafkaQueue extends Queue implements QueueContract
 {
-    private $producer, $consumer;
+    /**
+     * @var Producer
+     */
+    private $producer;
+
+    /**
+     * @var KafkaConsumer
+     */
+    private $consumer;
 
     public function __construct($producer, $consumer)
     {
@@ -26,8 +37,17 @@ class KafkaQueue extends Queue implements QueueContract
 
     public function push($job, $data = '', $queue = null)
     {
-        $topic = $this->producer->newTopic($queue ?? env('KAFKA_QUEUE'));
-        $topic->produce(RD_KAFKA_PARTITION_UA, 0, serialize($job));
+        $topicName = $queue ?? env('KAFKA_QUEUE');
+
+        if (!$topicName) {
+            throw new InvalidArgumentException('Kafka topic not provided (queue name / KAFKA_QUEUE).');
+        }
+
+        $topic = $this->producer->newTopic($topicName);
+        $payload = serialize($job);
+
+        $topic->produce(RD_KAFKA_PARTITION_UA, 0, $payload);
+
         $this->producer->flush(1000);
     }
 
@@ -37,7 +57,12 @@ class KafkaQueue extends Queue implements QueueContract
 
     public function pop($queue = null)
     {
-        $this->consumer->subscribe([$queue ?? env('KAFKA_QUEUE')]);
+        $topicName = $queue ?? env('KAFKA_QUEUE');
+        if (!$topicName) {
+            throw new InvalidArgumentException('Kafka topic not provided (queue name / KAFKA_QUEUE).');
+        }
+
+        $this->consumer->subscribe([$topicName]);
 
         try {
 
@@ -48,17 +73,18 @@ class KafkaQueue extends Queue implements QueueContract
                     $job = unserialize($message->payload);
                     $job->handle();
                     break;
+
                 case RD_KAFKA_RESP_ERR__PARTITION_EOF:
-                    var_dump("No more messages");
                     break;
+
                 case RD_KAFKA_RESP_ERR__TIMED_OUT:
-                    var_dump("Timed out");
                     break;
+
                 default:
                     throw new Exception($message->errstr(), $message->err);
             }
         } catch (Exception $e) {
-            var_dump($e->getMessage());
+            logger()->error('Kafka consumer error: '. $e->getMessage(), ['exception' => $e]);
         }
     }
 
