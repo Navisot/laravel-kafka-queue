@@ -3,67 +3,60 @@
 namespace Kafka;
 
 use Illuminate\Queue\Connectors\ConnectorInterface;
-use RdKafka\Conf;
-use RdKafka\KafkaConsumer;
-use RdKafka\Producer;
-use RuntimeException;
+use Kafka\Contracts\KafkaFactoryContract;
+use Kafka\Infra\ExtKafkaFactoryContract;
 use InvalidArgumentException;
 
 class KafkaConnector implements ConnectorInterface
 {
 
+    public array $required = [
+        'bootstrap_servers',
+        'security_protocol',
+        'sasl_mechanism',
+        'sasl_username',
+        'sasl_password',
+        'group_id',
+    ];
+
+    public function __construct(
+        private ?KafkaFactoryContract $factory = null,
+    )
+    {
+        $this->factory ??= new ExtKafkaFactoryContract();
+    }
+
     /**
      * @param array $config
      * @return KafkaQueue
      */
-    public function connect(array $config)
+    public function connect(array $config): KafkaQueue
     {
-        if (!extension_loaded('rdkafka')) {
-            throw new RuntimeException(
+        if (!extension_loaded('rdkafka') || !class_exists(\RdKafka\Conf::class)) {
+            throw new \RuntimeException(
                 'Kafka driver requires the "rdkafka" PHP extension.'
             );
         }
 
-        if (!class_exists(Conf::class)) {
-            throw new RuntimeException(
-                'ext-rdkafka appears missing or not enabled (RdKafka\\Conf not found).'
-            );
-        }
-
-        foreach (['bootstrap_servers', 'group_id'] as $required) {
-            if (empty($config[$required])) {
-                throw new InvalidArgumentException("Missing Kafka config: {$required}");
+        foreach ($this->required as $r) {
+            if (empty($config[$r])) {
+                throw new InvalidArgumentException("Missing Kafka config: {$r}");
             }
         }
 
-        $conf = new Conf();
-
+        $conf = $this->factory->makeConf();
+        // Required
         $conf->set('bootstrap.servers', $config['bootstrap_servers']);
-
-        if (!empty($config['security_protocol'])) {
-            $conf->set('security.protocol', $config['security_protocol']);
-        }
-
-        if (!empty($config['sasl_mechanisms'])) {
-            $conf->set('sasl.mechanisms', $config['sasl_mechanisms']);
-        }
-
-        if (!empty($config['sasl_username'])) {
-            $conf->set('sasl.username', $config['sasl_username']);
-        }
-
-        if (!empty($config['sasl_password'])) {
-            $conf->set('sasl.password', $config['sasl_password']);
-        }
-
-        $producer = new Producer($conf);
-
+        $conf->set('security.protocol', $config['security_protocol']);
+        $conf->set('sasl.mechanism', $config['sasl_mechanism']);
+        $conf->set('sasl.username', $config['sasl_username']);
+        $conf->set('sasl.password', $config['sasl_password']);
         $conf->set('group.id', $config['group_id']);
+        // Optional
+        if (!empty($config['auto_offset_reset']))    $conf->set('auto.offset.reset',    $config['auto_offset_reset']);
 
-        $conf->set('auto.offset.reset', $config['auto_offset_reset']);
-
-        $consumer = new KafkaConsumer($conf);
-
+        $producer = $this->factory->makeProducer($conf);
+        $consumer = $this->factory->makeConsumer($conf);
         return new KafkaQueue($producer, $consumer);
     }
 }
