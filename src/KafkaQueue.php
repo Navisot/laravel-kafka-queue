@@ -2,7 +2,7 @@
 
 namespace Kafka;
 
-use http\Exception\RuntimeException;
+use RuntimeException;
 use Illuminate\Queue\Queue;
 use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Kafka\Contracts\ConsumerContract;
@@ -19,9 +19,14 @@ use InvalidArgumentException;
  */
 class KafkaQueue extends Queue implements QueueContract
 {
+    private ProducerContract $producer;
+    private ConsumerContract $consumer;
 
-
-    public function __construct(private ProducerContract $producer, private ConsumerContract $consumer) {}
+    public function __construct(ProducerContract $producer, ConsumerContract $consumer)
+    {
+        $this->producer = $producer;
+        $this->consumer = $consumer;
+    }
 
     public function size($queue = null){}
 
