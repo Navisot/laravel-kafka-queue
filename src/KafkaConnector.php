@@ -19,9 +19,7 @@ class KafkaConnector implements ConnectorInterface
         'group_id',
     ];
 
-    public function __construct(
-        private ?KafkaFactoryContract $factory = null,
-    )
+    public function __construct(private ?KafkaFactoryContract $factory = null)
     {
         $this->factory ??= new ExtKafkaFactoryContract();
     }
