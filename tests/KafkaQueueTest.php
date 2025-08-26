@@ -17,7 +17,7 @@ class KafkaQueueTest extends TestCase
         $queue = $connector->connect([
             'bootstrap_servers' => 'broker:9092',
             'security_protocol' => 'test-ssl',
-            'sasl_mechanism' => 'test-mechanism',
+            'sasl_mechanisms' => 'test-mechanism',
             'sasl_username' => 'username',
             'sasl_password' => 'password',
             'group_id' => 'test-group',
@@ -36,7 +36,7 @@ class KafkaQueueTest extends TestCase
         $queue = $connector->connect([
             'bootstrap_servers' => 'broker:9092',
             'security_protocol' => 'test-ssl',
-            'sasl_mechanism' => 'test-mechanism',
+            'sasl_mechanisms' => 'test-mechanism',
             'sasl_username' => 'username',
             'sasl_password' => 'password',
             'group_id' => 'test-group',

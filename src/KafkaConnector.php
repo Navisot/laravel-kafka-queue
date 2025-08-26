@@ -13,7 +13,7 @@ class KafkaConnector implements ConnectorInterface
     public array $required = [
         'bootstrap_servers',
         'security_protocol',
-        'sasl_mechanism',
+        'sasl_mechanisms',
         'sasl_username',
         'sasl_password',
         'group_id',
@@ -46,7 +46,7 @@ class KafkaConnector implements ConnectorInterface
         // Required
         $conf->set('bootstrap.servers', $config['bootstrap_servers']);
         $conf->set('security.protocol', $config['security_protocol']);
-        $conf->set('sasl.mechanism', $config['sasl_mechanism']);
+        $conf->set('sasl.mechanisms', $config['sasl_mechanisms']);
         $conf->set('sasl.username', $config['sasl_username']);
         $conf->set('sasl.password', $config['sasl_password']);
         $conf->set('group.id', $config['group_id']);
